@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.js",
-    "test": "node test/helpers.test.js && node test/bundle.test.js && node test/instantiation.test.js",
+    "test": "node test/helpers.test.js && node test/bundle.test.js && node test/instantiation.test.js && node test/interaction.test.js",
     "lint": "npx --yes eslint@9 src test scripts"
   },
   "keywords": [

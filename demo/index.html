@@ -126,7 +126,7 @@
           entity.state = 'off';
         }
         for (const card of document.querySelectorAll('hold-confirm-toggle')) {
-          card.hass = { states };
+          card.hass = hass;
         }
       },
     };
