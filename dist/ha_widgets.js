@@ -1,6 +1,8 @@
 /*! ha_widgets bundle — generated, do not edit */
+/*! version: 0.1.0+7c1e83e */
 (function () {
 'use strict';
+console.log('[ha_widgets] version 0.1.0+7c1e83e');
 
 /* --- helpers.js --- */
 const MODES = ['hold', 'confirm', 'both'];

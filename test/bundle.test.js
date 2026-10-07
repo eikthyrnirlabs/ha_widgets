@@ -86,4 +86,18 @@ check('bundle executes and registers every widget', () => {
   assert.ok(out.includes('smoke ok'), out);
 });
 
+check('demo pages reference the bundle with a cache-busting version tag', () => {
+  const tag = /\?v=([\w.\-]+)/;
+  const tags = [];
+  for (const page of ['buttons', 'dial']) {
+    const html = readFileSync(join(root, 'demo', page, 'index.html'), 'utf8');
+    const m = html.match(tag);
+    assert.ok(m, `missing ?v= tag in demo/${page}/index.html`);
+    tags.push(m[1]);
+  }
+  assert.equal(tags[0], tags[1], 'cache tags must match across demo pages');
+  const bundle = readFileSync(dist, 'utf8');
+  assert.ok(bundle.includes('version:'), 'bundle must embed its version');
+});
+
 console.log(`\n${passed} bundle checks passed`);
