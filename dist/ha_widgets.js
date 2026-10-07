@@ -113,6 +113,7 @@ const DEFAULT_DIAL_CONFIG = Object.freeze({
   low: undefined,
   mid: undefined,
   high: undefined,
+  humidity_entity: '',
 });
 
 const DIAL_COLORS = Object.freeze({
@@ -140,6 +141,9 @@ function validateDialConfig(config) {
   const confirm = Number(config.confirm_seconds);
   if (Number.isNaN(confirm) || confirm <= 0) {
     return 'confirm_seconds must be a positive number';
+  }
+  if (config.humidity_entity !== undefined && typeof config.humidity_entity !== 'string') {
+    return 'humidity_entity must be an entity id';
   }
   const thresholds = ['low', 'mid', 'high'].filter(
     (k) => config[k] !== undefined && config[k] !== null
@@ -267,6 +271,33 @@ function resolveDialColor(value, config) {
     return mixHex(DIAL_COLORS.mild, DIAL_COLORS.hot, (value - mid) / (high - mid));
   }
   return config.color || null;
+}
+
+function readTemperature(entity) {
+  if (!entity) return null;
+  const attrs = entity.attributes || {};
+  const raw =
+    attrs.temperature ?? attrs.current_temperature ?? entity.state;
+  if (raw === undefined || raw === null || raw === 'unknown' || raw === 'unavailable') {
+    return null;
+  }
+  const num = Number(raw);
+  return Number.isNaN(num) ? null : num;
+}
+
+function readHumidity(entity) {
+  if (!entity) return null;
+  const attrs = entity.attributes || {};
+  let raw = attrs.humidity ?? entity.state;
+  if (raw === undefined || raw === null || raw === 'unknown' || raw === 'unavailable') {
+    return null;
+  }
+  let unit = attrs.unit_of_measurement || '%';
+  if (unit !== '%') {
+    unit = '%';
+  }
+  const num = Number(raw);
+  return Number.isNaN(num) ? null : { value: num, unit };
 }
 
 
@@ -721,6 +752,10 @@ dialTemplate.innerHTML = `
       color: var(--primary-text-color, #212121);
       font-variant-numeric: tabular-nums;
     }
+    .humidity {
+      font-size: 12px;
+      color: var(--secondary-text-color, #727272);
+    }
     .unit {
       font-size: 13px;
       color: var(--secondary-text-color, #727272);
@@ -764,6 +799,7 @@ dialTemplate.innerHTML = `
       <div class="center">
         <div class="value"></div>
         <div class="unit"></div>
+        <div class="humidity" hidden></div>
         <button class="accept-btn" type="button"></button>
       </div>
     </div>
@@ -845,14 +881,12 @@ class TempDial extends HTMLElement {
   }
 
   get _currentValue() {
-    const entity = this._entity;
-    if (!entity) return null;
-    const temp =
-      entity.attributes &&
-      (entity.attributes.temperature ??
-        entity.attributes.current_temperature ??
-        null);
-    return temp === null ? null : Number(temp);
+    return readTemperature(this._entity);
+  }
+
+  get _humidity() {
+    if (!this.config.humidity_entity || !this.hass) return null;
+    return readHumidity(this.hass.states[this.config.humidity_entity]);
   }
 
   get _unit() {
@@ -1003,6 +1037,15 @@ class TempDial extends HTMLElement {
     this.shadowRoot.querySelector('.value').textContent =
       value === null ? '--' : String(Math.round(value * 10) / 10);
     this.shadowRoot.querySelector('.unit').textContent = this._unit;
+    const humidityEl = this.shadowRoot.querySelector('.humidity');
+    const humidity = this._humidity;
+    if (humidity && this.config.humidity_entity) {
+      humidityEl.textContent = `${Math.round(humidity.value)}${humidity.unit} humidity`;
+      humidityEl.hidden = false;
+    } else {
+      humidityEl.textContent = '';
+      humidityEl.hidden = true;
+    }
     const cx = 100;
     const cy = 100;
     const r = 78;

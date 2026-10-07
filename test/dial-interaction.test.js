@@ -62,6 +62,10 @@ const states = {
     state: 'heat',
     attributes: { friendly_name: 'Heating', temperature: 20, unit_of_measurement: '°C' },
   },
+  'sensor.room_humidity': {
+    state: '55',
+    attributes: { unit_of_measurement: '%' },
+  },
 };
 const hass = {
   states,
@@ -74,7 +78,7 @@ const hass = {
 };
 
 const card = new TempDial();
-card.setConfig({ entity: 'climate.heat', min: 15, max: 30, step: 0.5, confirm_seconds: 5 });
+card.setConfig({ entity: 'climate.heat', min: 15, max: 30, step: 0.5, confirm_seconds: 5, humidity_entity: 'sensor.room_humidity' });
 card.hass = hass;
 card.connectedCallback();
 
@@ -137,6 +141,13 @@ if (states['climate.heat'].attributes.temperature !== 22.5) throw new Error('sta
   if (Math.abs(endX - expectEnd[0]) > 1 || Math.abs(endY - expectEnd[1]) > 1) {
     throw new Error('arc end mismatch (fill must end at knob): ' + endX + ',' + endY);
   }
+}
+
+// humidity: configured -> shown; not configured -> hidden
+{
+  const hEl = els['.humidity'];
+  if (hEl.textContent !== '55% humidity') throw new Error('humidity text wrong: ' + hEl.textContent);
+  if (hEl.hidden) throw new Error('humidity should be visible');
 }
 
 console.log('scenario ok');

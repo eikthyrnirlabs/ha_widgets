@@ -51,6 +51,7 @@ export function configToYaml(config, type) {
     'low',
     'mid',
     'high',
+    'humidity_entity',
   ];
   const lines = [['type', 'custom:' + type]];
   for (const k of keys) {

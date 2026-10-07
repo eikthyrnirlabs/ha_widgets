@@ -8,6 +8,8 @@ import {
   validateDialConfig,
   valueToAngle,
   angleToValue,
+  readTemperature,
+  readHumidity,
 } from './dial-helpers.js';
 import { clamp, resolveConfirmMs } from './helpers.js';
 
@@ -94,6 +96,10 @@ dialTemplate.innerHTML = `
       color: var(--primary-text-color, #212121);
       font-variant-numeric: tabular-nums;
     }
+    .humidity {
+      font-size: 12px;
+      color: var(--secondary-text-color, #727272);
+    }
     .unit {
       font-size: 13px;
       color: var(--secondary-text-color, #727272);
@@ -137,6 +143,7 @@ dialTemplate.innerHTML = `
       <div class="center">
         <div class="value"></div>
         <div class="unit"></div>
+        <div class="humidity" hidden></div>
         <button class="accept-btn" type="button"></button>
       </div>
     </div>
@@ -218,14 +225,12 @@ export class TempDial extends HTMLElement {
   }
 
   get _currentValue() {
-    const entity = this._entity;
-    if (!entity) return null;
-    const temp =
-      entity.attributes &&
-      (entity.attributes.temperature ??
-        entity.attributes.current_temperature ??
-        null);
-    return temp === null ? null : Number(temp);
+    return readTemperature(this._entity);
+  }
+
+  get _humidity() {
+    if (!this.config.humidity_entity || !this.hass) return null;
+    return readHumidity(this.hass.states[this.config.humidity_entity]);
   }
 
   get _unit() {
@@ -377,6 +382,15 @@ export class TempDial extends HTMLElement {
     this.shadowRoot.querySelector('.value').textContent =
       value === null ? '--' : String(Math.round(value * 10) / 10);
     this.shadowRoot.querySelector('.unit').textContent = this._unit;
+    const humidityEl = this.shadowRoot.querySelector('.humidity');
+    const humidity = this._humidity;
+    if (humidity && this.config.humidity_entity) {
+      humidityEl.textContent = `${Math.round(humidity.value)}${humidity.unit} humidity`;
+      humidityEl.hidden = false;
+    } else {
+      humidityEl.textContent = '';
+      humidityEl.hidden = true;
+    }
     const cx = 100;
     const cy = 100;
     const r = 78;
