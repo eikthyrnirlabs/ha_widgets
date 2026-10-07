@@ -49,7 +49,7 @@ confirm_seconds: 5
 A browser demo is hosted on GitHub Pages — simulated entities, no Home
 Assistant needed:
 
-**[Open the demo](https://eikthyrnirlabs.github.io/ha_widgets/)**
+**[Open the demos](https://eikthyrnirlabs.github.io/ha_widgets/demo/)**
 
 ### Temperature Dial (`temp-dial`)
 

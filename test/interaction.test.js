@@ -142,9 +142,20 @@ check('hold turns on then off; confirm turns on across hass re-assignments', () 
 });
 
 check('demo keeps callService on the persistent hass object', () => {
-  const demo = readFileSync(join(root, 'demo', 'index.html'), 'utf8');
-  assert.ok(!demo.includes('card.hass = { states }'), 'demo must not strip callService');
-  assert.ok(demo.includes('card.hass = hass'), 'demo must re-assign persistent hass');
+  const shared = readFileSync(join(root, 'demo', 'shared.js'), 'utf8');
+  assert.ok(!shared.includes('card.hass = { states }'), 'demo must not strip callService');
+  assert.ok(shared.includes('card.hass = hass'), 'demo must re-assign persistent hass');
+});
+
+check('dial demo is marked under development, buttons demo is not', () => {
+  const overview = readFileSync(join(root, 'demo', 'index.html'), 'utf8');
+  const buttons = overview.indexOf('buttons/');
+  const dial = overview.indexOf('dial/');
+  assert.ok(buttons > 0 && dial > buttons, 'overview should link both demos');
+  const buttonsCard = overview.slice(overview.indexOf('Hold/Confirm Toggle'), dial);
+  assert.ok(!buttonsCard.includes('Under development'), 'buttons demo must not be marked WIP');
+  const dialCard = overview.slice(dial);
+  assert.ok(dialCard.includes('Under development'), 'dial demo must be marked under development');
 });
 
 console.log(`\n${passed} interaction checks passed`);

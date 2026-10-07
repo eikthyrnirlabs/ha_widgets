@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ha_widgets demo — Hold/Confirm Toggle</title>
+  <title>ha_widgets — demo</title>
+  <meta name="description" content="Interactive browser demos of custom Home Assistant Lovelace widgets" />
   <style>
     :root {
       color-scheme: light dark;
@@ -35,54 +36,73 @@
       body { background: #111; }
     }
     .wrap {
-      max-width: 640px;
+      max-width: 720px;
       margin: 0 auto;
-      padding: 24px 16px 64px;
+      padding: 40px 16px 64px;
     }
-    h1 { font-size: 22px; margin: 0 0 4px; }
-    .sub { color: var(--secondary-text-color); font-size: 14px; margin-bottom: 24px; }
+    h1 { font-size: 26px; margin: 0 0 4px; }
+    .sub { color: var(--secondary-text-color); font-size: 14px; margin-bottom: 28px; }
     .sub a { color: var(--primary-color); }
-    .grid {
+    .demos {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 16px;
     }
-    .cell { display: flex; flex-direction: column; gap: 8px; }
-    .config {
-      border-radius: 8px;
-      background: var(--secondary-background-color);
-      padding: 10px 12px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 12px;
-      line-height: 1.5;
-      white-space: pre;
-      overflow-x: auto;
-      color: var(--primary-text-color);
-    }
-    .config .c { color: var(--secondary-text-color); }
-    .config .k { color: var(--primary-color); }
-    .log {
-      margin-top: 32px;
+    .demo-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 20px;
       border-radius: var(--ha-card-border-radius);
       background: var(--card-background-color);
       box-shadow: var(--ha-card-box-shadow);
-      padding: 16px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform .12s ease, box-shadow .12s ease;
     }
-    .log h2 { font-size: 15px; margin: 0 0 8px; }
-    .log ul {
-      margin: 0;
-      padding-left: 20px;
-      font-family: ui-monospace, monospace;
+    .demo-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0,0,0,.15);
+    }
+    .demo-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .demo-title { font-size: 17px; font-weight: 600; }
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .3px;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: var(--warning-color);
+      color: #1c1c1c;
+      white-space: nowrap;
+    }
+    .badge.ready {
+      background: #2ecc71;
+      color: #08351c;
+    }
+    .demo-desc {
       font-size: 13px;
       color: var(--secondary-text-color);
-      max-height: 220px;
-      overflow-y: auto;
+      line-height: 1.5;
     }
-    .log li { margin: 2px 0; }
-    .log .svc { color: var(--primary-color); }
-    .empty { color: var(--secondary-text-color); font-style: italic; }
+    .demo-type {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: var(--primary-color);
+    }
+    .demo-go {
+      margin-top: auto;
+      font-size: 13px;
+      color: var(--primary-color);
+      font-weight: 600;
+    }
     footer {
-      margin-top: 32px;
+      margin-top: 40px;
       font-size: 12px;
       color: var(--secondary-text-color);
       text-align: center;
@@ -91,105 +111,41 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>Hold/Confirm Toggle</h1>
+    <h1>ha_widgets demos</h1>
     <div class="sub">
-      Demo of <a href="https://github.com/eikthyrnirlabs/ha_widgets">ha_widgets</a> —
-      hold/confirm toggle and temperature dial.
-      Entities are simulated in your browser, nothing is controlled.
+      Custom Lovelace widgets for <a href="https://github.com/eikthyrnirlabs/ha_widgets">Home Assistant</a>.
+      All demos run fully in your browser with simulated entities — nothing is controlled.
     </div>
 
-    <div class="grid" id="cards"></div>
+    <div class="demos">
+      <a class="demo-card" href="buttons/">
+        <div class="demo-head">
+          <span class="demo-title">Hold/Confirm Toggle</span>
+          <span class="badge ready">Ready</span>
+        </div>
+        <div class="demo-type">custom:hold-confirm-toggle</div>
+        <div class="demo-desc">
+          A toggle that won't switch on by accident: press and hold, or tap and
+          confirm. Turning off stays quick with a short hold.
+        </div>
+        <div class="demo-go">Open demo →</div>
+      </a>
 
-    <div class="log">
-      <h2>Service calls (simulated)</h2>
-      <ul id="log"><li class="empty">No calls yet — try holding or confirming a toggle.</li></ul>
+      <a class="demo-card" href="dial/">
+        <div class="demo-head">
+          <span class="demo-title">Temperature Dial</span>
+          <span class="badge">Under development</span>
+        </div>
+        <div class="demo-type">custom:temp-dial</div>
+        <div class="demo-desc">
+          Drag the dial to pick a temperature, then press Accept in the center.
+          Nothing is sent until you confirm; expiry reverts the change.
+        </div>
+        <div class="demo-go">Open demo →</div>
+      </a>
     </div>
 
-    <footer>Try: hold for the configured duration · release early to cancel ·
-      tap then confirm in confirm mode · turning off only needs a short hold.</footer>
+    <footer>More widgets will appear here as they are built.</footer>
   </div>
-
-  <script src="../dist/ha_widgets.js"></script>
-  <script>
-    const states = {
-      'switch.garage_door': { state: 'off', attributes: { friendly_name: 'Garage Door' } },
-      'light.kitchen': { state: 'on', attributes: { friendly_name: 'Kitchen Light' } },
-      'input_boolean.guest_mode': { state: 'off', attributes: { friendly_name: 'Guest Mode' } },
-      'climate.heating': {
-        state: 'heat',
-        attributes: { friendly_name: 'Heating', temperature: 20, unit_of_measurement: '°C' },
-      },
-    };
-
-    const logEl = document.getElementById('log');
-    let logged = false;
-    function logCall(domain, service, entityId) {
-      if (!logged) { logEl.innerHTML = ''; logged = true; }
-      const li = document.createElement('li');
-      const time = new Date().toLocaleTimeString();
-      li.innerHTML = `<span class="svc">${domain}.${service}</span>(${entityId}) at ${time}`;
-      logEl.prepend(li);
-    }
-
-    const hass = {
-      states,
-      callService(domain, service, data) {
-        logCall(domain, service, data.entity_id);
-        const entity = states[data.entity_id];
-        if (!entity) return;
-        if (service === 'toggle') {
-          entity.state = entity.state === 'on' ? 'off' : 'on';
-        } else if (service === 'turn_on') {
-          entity.state = 'on';
-        } else if (service === 'turn_off') {
-          entity.state = 'off';
-        } else if (service === 'set_temperature') {
-          entity.attributes.temperature = data.temperature;
-        }
-        for (const card of document.querySelectorAll('hold-confirm-toggle')) {
-          card.hass = hass;
-        }
-      },
-    };
-
-    const configs = [
-      { entity: 'switch.garage_door', mode: 'both', hold_seconds: 1.5, confirm_seconds: 5 },
-      { entity: 'light.kitchen', mode: 'hold', hold_seconds: 2 },
-      { entity: 'input_boolean.guest_mode', mode: 'confirm', confirm_seconds: 4 },
-    ];
-
-    const dialConfigs = [
-      { entity: 'climate.heating', min: 15, max: 30, step: 0.5, confirm_seconds: 5 },
-    ];
-
-    function configToYaml(config, type) {
-      const keys = ['entity', 'name', 'mode', 'hold_seconds', 'confirm_seconds', 'min', 'max', 'step', 'unit'];
-      const lines = [['type', 'custom:' + type]];
-      for (const k of keys) {
-        if (config[k] !== undefined) lines.push([k, config[k]]);
-      }
-      return lines
-        .map(([k, v]) => `<span class="k">${k}:</span> ${v}`)
-        .join('\n');
-    }
-
-    function renderCard(tagName, config) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      const card = document.createElement(tagName);
-      card.setConfig(config);
-      card.hass = hass;
-      const pre = document.createElement('div');
-      pre.className = 'config';
-      pre.innerHTML = configToYaml(config, tagName);
-      cell.appendChild(card);
-      cell.appendChild(pre);
-      grid.appendChild(cell);
-    }
-
-    const grid = document.getElementById('cards');
-    for (const config of configs) renderCard('hold-confirm-toggle', config);
-    for (const config of dialConfigs) renderCard('temp-dial', config);
-  </script>
 </body>
 </html>
