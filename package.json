@@ -1,0 +1,19 @@
+{
+  "name": "ha_widgets",
+  "version": "0.1.0",
+  "description": "Custom Lovelace widgets for Home Assistant",
+  "main": "dist/ha_widgets.js",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node test/helpers.test.js && node test/bundle.test.js",
+    "lint": "npx --yes eslint@9 src test scripts"
+  },
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "hacs",
+    "widgets"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,87 @@
+# ha_widgets
+
+Custom Lovelace widgets for Home Assistant. Small, focused cards built for the
+things stock dashboards don't do well — starting with safety toggles that are
+hard to trigger by accident from a phone.
+
+## Widgets
+
+### Hold/Confirm Toggle (`hold-confirm-toggle`)
+
+A toggle card that won't switch on by accident. To **turn something ON** you
+must either:
+
+- **Hold** the button for a configurable duration (default 1.5s), or
+- **Tap, then confirm** within a time window.
+
+Turning something **off** always uses a short 0.5s hold (or the confirm flow),
+so deactivating stays quick.
+
+Useful for garage doors, heating, irons, pumps — anything you don't want
+triggered by a pocket tap or a fumbled scroll.
+
+![type: custom](https://img.shields.io/badge/type-custom-orange)
+
+#### Options
+
+| Name             | Type    | Default      | Description                                                                 |
+| ---------------- | ------- | ------------ | --------------------------------------------------------------------------- |
+| `type`           | string  | **required** | `custom:hold-confirm-toggle`                                                |
+| `entity`         | string  | **required** | Entity to toggle (e.g. `switch.garage_door`)                                |
+| `name`           | string  | friendly name | Card title                                                                  |
+| `mode`           | string  | `hold`       | `hold` — hold to activate · `confirm` — tap then confirm · `both` — either   |
+| `hold_seconds`   | number  | `1.5`        | How long to hold to activate (0.1–10, ignored in `confirm` mode)             |
+| `confirm_seconds`| number | `5`          | How long the confirmation window stays open (1–30)                           |
+
+#### Example
+
+```yaml
+type: custom:hold-confirm-toggle
+entity: switch.garage_door
+name: Garage Door
+mode: both
+hold_seconds: 2
+confirm_seconds: 5
+```
+
+## Installation
+
+### HACS (recommended)
+
+1. Add this repository in HACS as a **Lovelace** custom repository:
+   `https://github.com/eikthyrnirlabs/ha_widgets`
+2. Install **ha_widgets**.
+3. Add the resource (HACS usually does this automatically):
+
+```yaml
+resources:
+  - type: js
+    url: /hacsfiles/ha_widgets/ha_widgets.js
+```
+
+### Manual
+
+1. Download [`dist/ha_widgets.js`](dist/ha_widgets.js).
+2. Copy it to `<config>/www/ha_widgets.js`.
+3. Add it under **Settings → Dashboards → Resources** (or in YAML):
+
+```yaml
+resources:
+  - type: js
+    url: /local/ha_widgets.js
+```
+
+## Development
+
+- `npm test` — run unit tests (logic) and bundle checks
+- `npm run build` — regenerate `dist/ha_widgets.js`
+- `npm run lint` — eslint over `src/`, `test/`, `scripts/`
+
+Each widget lives in its own module under `src/`. Widgets are plain custom
+elements (no framework), so they load fast and work in any dashboard. Pure
+logic (timing, config validation, service selection) is kept in `src/helpers.js`
+so it can be unit-tested without a browser.
+
+## License
+
+[MIT](LICENSE)
