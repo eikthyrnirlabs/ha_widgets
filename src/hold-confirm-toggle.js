@@ -10,8 +10,8 @@ import {
   validateConfig,
 } from './helpers.js';
 
-const template = document.createElement('template');
-template.innerHTML = `
+const cardTemplate = document.createElement('template');
+cardTemplate.innerHTML = `
   <style>
     :host {
       display: block;
@@ -125,7 +125,7 @@ export class HoldConfirmToggle extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
-    this.shadowRoot.appendChild(template.content.cloneNode(true));
+    this.shadowRoot.appendChild(cardTemplate.content.cloneNode(true));
     this._hass = null;
     this.config = { ...DEFAULT_CONFIG };
     this._confirmPending = false;

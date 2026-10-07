@@ -1,6 +1,8 @@
 import assert from 'node:assert';
 import { readFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -43,9 +45,45 @@ check('bundle registers the custom element', () => {
 
 check('source modules parse as ESM', () => {
   const src = join(root, 'src');
-  for (const f of ['helpers.js', 'hold-confirm-toggle.js']) {
+  for (const f of ['helpers.js', 'dial-helpers.js', 'hold-confirm-toggle.js', 'temp-dial.js']) {
     execFileSync('node', ['--check', join(src, f)]);
   }
+});
+
+const SMOKE = `
+const noop = () => {};
+globalThis.window = globalThis;
+globalThis.document = {
+  createElement: () => ({
+    innerHTML: '',
+    content: { cloneNode: () => ({}) },
+    style: {},
+    classList: { toggle: noop, add: noop, remove: noop, contains: () => false },
+    textContent: '',
+    hidden: false,
+    setAttribute: noop,
+    addEventListener: noop,
+  }),
+  addEventListener: noop,
+  removeEventListener: noop,
+  querySelectorAll: () => [],
+};
+const defined = [];
+globalThis.customElements = { define: (name) => defined.push(name), get: () => undefined };
+globalThis.HTMLElement = class {};
+await import(${JSON.stringify(dist)});
+if (defined.length !== 2 || !defined.includes('hold-confirm-toggle') || !defined.includes('temp-dial')) {
+  throw new Error('expected both elements registered, got: ' + JSON.stringify(defined));
+}
+console.log('smoke ok');
+`;
+
+check('bundle executes and registers every widget', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'haw-'));
+  const smokePath = join(tmp, 'smoke.mjs');
+  writeFileSync(smokePath, SMOKE);
+  const out = execFileSync('node', [smokePath], { encoding: 'utf8' });
+  assert.ok(out.includes('smoke ok'), out);
 });
 
 console.log(`\n${passed} bundle checks passed`);
