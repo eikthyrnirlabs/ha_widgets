@@ -126,7 +126,7 @@ export class HoldConfirmToggle extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
     this.shadowRoot.appendChild(template.content.cloneNode(true));
-    this.hass = null;
+    this._hass = null;
     this.config = { ...DEFAULT_CONFIG };
     this._confirmPending = false;
     this._holdActive = false;
@@ -229,6 +229,13 @@ export class HoldConfirmToggle extends HTMLElement {
     this._beginConfirm();
   }
 
+  _cancelHold() {
+    clearTimeout(this._holdTimer);
+    this._holdTimer = null;
+    this._holdActive = false;
+    this._resetBar();
+  }
+
   _resetBar() {
     const bar = this.shadowRoot.querySelector('.bar');
     if (!bar) return;
@@ -288,7 +295,7 @@ export class HoldConfirmToggle extends HTMLElement {
   }
 
   _render() {
-    if (!this.shadowRoot) return;
+    if (!this.shadowRoot || !this.config) return;
     const card = this.shadowRoot.querySelector('.card');
     const missing = this.shadowRoot.querySelector('.missing');
     const entity = this._entity;
