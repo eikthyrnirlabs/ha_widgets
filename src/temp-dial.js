@@ -10,8 +10,8 @@ import {
 } from './dial-helpers.js';
 import { clamp, resolveConfirmMs } from './helpers.js';
 
-const template = document.createElement('template');
-template.innerHTML = `
+const dialTemplate = document.createElement('template');
+dialTemplate.innerHTML = `
   <style>
     :host {
       display: block;
@@ -174,7 +174,7 @@ export class TempDial extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
-    this.shadowRoot.appendChild(template.content.cloneNode(true));
+    this.shadowRoot.appendChild(dialTemplate.content.cloneNode(true));
     this._hass = null;
     this.config = { ...DEFAULT_DIAL_CONFIG };
     this._dragging = false;
