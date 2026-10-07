@@ -47,6 +47,10 @@ export function configToYaml(config, type) {
     'max',
     'step',
     'unit',
+    'color',
+    'low',
+    'mid',
+    'high',
   ];
   const lines = [['type', 'custom:' + type]];
   for (const k of keys) {

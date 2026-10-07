@@ -70,6 +70,15 @@ an unconfirmed change reverts when the window expires.
 | `step`            | number  | `0.5`        | Rounding increment while dragging                   |
 | `unit`            | string  | entity unit  | Unit shown next to the value (e.g. `°C`)            |
 | `confirm_seconds` | number  | `5`          | How long the accept window stays open (1–30)        |
+| `color`           | string  | theme color  | Single color for knob and fill (e.g. `#ff9800`)      |
+| `low`             | number  | –            | Blue-green-red gradient: value shown as blue          |
+| `mid`             | number  | –            | Gradient midpoint (green). Set all three or none     |
+| `high`            | number  | –            | Gradient top (red)                                   |
+
+If `low`, `mid` and `high` are all set, the knob and circle fill blend
+blue → green → red across that range (overriding `color`). With none set,
+`color` applies as a single color; with neither, the theme's primary color
+is used.
 
 #### Example
 
@@ -81,6 +90,15 @@ max: 30
 step: 0.5
 confirm_seconds: 5
 ```
+
+## Using widgets in multiple rooms
+
+Every card instance is fully independent: all state (config, pending
+confirmations, hold timers, dial values) lives on the element instance, never
+in shared module state. You can add the same widget type to any number of
+dashboards and rooms with different entities, options, and simultaneous
+interactions — an active confirmation on one card never affects another.
+This is enforced by a multi-instance test in CI.
 
 ## Installation
 

@@ -8,6 +8,16 @@ export const DEFAULT_DIAL_CONFIG = Object.freeze({
   max: 30,
   unit: '°C',
   confirm_seconds: 5,
+  color: '',
+  low: undefined,
+  mid: undefined,
+  high: undefined,
+});
+
+export const DIAL_COLORS = Object.freeze({
+  cold: '#2196f3',
+  mild: '#4caf50',
+  hot: '#f44336',
 });
 
 export function validateDialConfig(config) {
@@ -29,6 +39,19 @@ export function validateDialConfig(config) {
   const confirm = Number(config.confirm_seconds);
   if (Number.isNaN(confirm) || confirm <= 0) {
     return 'confirm_seconds must be a positive number';
+  }
+  const thresholds = ['low', 'mid', 'high'].filter(
+    (k) => config[k] !== undefined && config[k] !== null
+  );
+  if (thresholds.length === 3) {
+    const low = Number(config.low);
+    const mid = Number(config.mid);
+    const high = Number(config.high);
+    if (Number.isNaN(low) || Number.isNaN(mid) || Number.isNaN(high) || low >= mid || mid >= high) {
+      return 'low, mid, high must be numbers with low < mid < high';
+    }
+  } else if (thresholds.length !== 0) {
+    return 'low, mid and high must all be defined together';
   }
   return null;
 }
@@ -90,4 +113,57 @@ export function dialI18n(key, params, lang = 'en') {
     }
   }
   return text;
+}
+
+export function hexToRgb(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+export function rgbToHex(r, g, b) {
+  const to2 = (v) => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0');
+  return `#${to2(r)}${to2(g)}${to2(b)}`;
+}
+
+export function mixHex(a, b, t) {
+  const ca = hexToRgb(a);
+  const cb = hexToRgb(b);
+  if (!ca || !cb) return a;
+  const ratio = clamp(t, 0, 1);
+  return rgbToHex(
+    ca[0] + (cb[0] - ca[0]) * ratio,
+    ca[1] + (cb[1] - ca[1]) * ratio,
+    ca[2] + (cb[2] - ca[2]) * ratio
+  );
+}
+
+export function hasColorScale(config) {
+  return (
+    ['low', 'mid', 'high'].every(
+      (k) =>
+        config[k] !== undefined &&
+        config[k] !== null &&
+        !Number.isNaN(Number(config[k]))
+    ) &&
+    Number(config.low) < Number(config.mid) &&
+    Number(config.mid) < Number(config.high)
+  );
+}
+
+export function resolveDialColor(value, config) {
+  if (hasColorScale(config)) {
+    if (value === null || value === undefined) return null;
+    const low = Number(config.low);
+    const mid = Number(config.mid);
+    const high = Number(config.high);
+    if (value <= low) return DIAL_COLORS.cold;
+    if (value >= high) return DIAL_COLORS.hot;
+    if (value <= mid) {
+      return mixHex(DIAL_COLORS.cold, DIAL_COLORS.mild, (value - low) / (mid - low));
+    }
+    return mixHex(DIAL_COLORS.mild, DIAL_COLORS.hot, (value - mid) / (high - mid));
+  }
+  return config.color || null;
 }
