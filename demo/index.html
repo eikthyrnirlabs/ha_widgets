@@ -47,6 +47,20 @@
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 16px;
     }
+    .cell { display: flex; flex-direction: column; gap: 8px; }
+    .config {
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      padding: 10px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre;
+      overflow-x: auto;
+      color: var(--primary-text-color);
+    }
+    .config .c { color: var(--secondary-text-color); }
+    .config .k { color: var(--primary-color); }
     .log {
       margin-top: 32px;
       border-radius: var(--ha-card-border-radius);
@@ -137,12 +151,33 @@
       { entity: 'input_boolean.guest_mode', mode: 'confirm', confirm_seconds: 4 },
     ];
 
+    function configToYaml(config) {
+      const lines = [
+        ['type', 'custom:hold-confirm-toggle'],
+        ['entity', config.entity],
+        ['mode', config.mode],
+        ['hold_seconds', config.hold_seconds],
+        ['confirm_seconds', config.confirm_seconds],
+      ];
+      return lines
+        .filter(([k, v]) => v !== undefined)
+        .map(([k, v]) => `<span class="k">${k}:</span> ${v}`)
+        .join('\n');
+    }
+
     const grid = document.getElementById('cards');
     for (const config of configs) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
       const card = document.createElement('hold-confirm-toggle');
       card.setConfig(config);
       card.hass = hass;
-      grid.appendChild(card);
+      const pre = document.createElement('div');
+      pre.className = 'config';
+      pre.innerHTML = configToYaml(config);
+      cell.appendChild(card);
+      cell.appendChild(pre);
+      grid.appendChild(cell);
     }
   </script>
 </body>
