@@ -44,6 +44,13 @@ hold_seconds: 2
 confirm_seconds: 5
 ```
 
+## Try it online
+
+A browser demo is hosted on GitHub Pages — simulated entities, no Home
+Assistant needed:
+
+**[Open the demo](https://eikthyrnirlabs.github.io/ha_widgets/)**
+
 ## Installation
 
 ### HACS (recommended)
