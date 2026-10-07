@@ -104,6 +104,32 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   calls.length = 0;
 }
 
+// Both-mode card: early release opens confirm window, does NOT enable instantly.
+{
+  const states = { 'light.b': { state: 'off', attributes: {} } };
+  const card = new HoldConfirmToggle();
+  card.setConfig({ entity: 'light.b', mode: 'both', hold_seconds: 1, confirm_seconds: 5 });
+  card.hass = makeHass(states);
+  // press and release before hold completes
+  card._onPointerDown({ button: 0 });
+  card._finishHold(false);
+  if (!card._confirmPending) throw new Error('early release should open confirm window');
+  if (states['light.b'].state !== 'off') throw new Error('early release must not enable');
+  if (calls.length !== 0) throw new Error('no service call expected on early release');
+  // the trailing click must be suppressed, not confirm the action
+  card._onClick({});
+  if (states['light.b'].state !== 'off') throw new Error('trailing click must not enable');
+  // countdown hint shows remaining seconds
+  const hint = card._hint();
+  if (!hint.includes("5")) throw new Error('hint should show countdown, got: ' + hint);
+  // now an explicit tap confirms
+  card._onPointerDown({ button: 0 });
+  card._onClick({ composedPath: () => [{ classList: { contains: () => true } }] });
+  if (states['light.b'].state !== 'on') throw new Error('explicit tap should confirm and turn on');
+  if (calls.length !== 1) throw new Error('expected 1 call, got ' + calls.length);
+  calls.length = 0;
+}
+
 console.log('scenario ok');
 `;
 

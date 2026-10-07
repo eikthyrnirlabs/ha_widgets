@@ -223,6 +223,9 @@ class HoldConfirmToggle extends HTMLElement {
     this._holdActive = false;
     this._holdTimer = null;
     this._confirmTimer = null;
+    this._confirmTicker = null;
+    this._confirmExpiresAt = 0;
+    this._suppressClick = false;
     this._boundPointerUp = () => this._finishHold(false);
     this._boundPointerCancel = () => this._finishHold(true);
   }
@@ -246,6 +249,7 @@ class HoldConfirmToggle extends HTMLElement {
     };
     this._clearConfirm();
     this._cancelHold();
+    this._suppressClick = false;
     this._render();
   }
 
@@ -293,6 +297,7 @@ class HoldConfirmToggle extends HTMLElement {
 
   _onPointerDown(e) {
     if (e.button !== undefined && e.button !== 0) return;
+    this._suppressClick = false;
     if (this._confirmPending) return;
     const ms = this._holdMs;
     if (!ms) return;
@@ -317,6 +322,7 @@ class HoldConfirmToggle extends HTMLElement {
     this._resetBar();
     if (cancelled) return;
     if (this.config.mode === 'hold') return;
+    this._suppressClick = true;
     this._beginConfirm();
   }
 
@@ -337,16 +343,23 @@ class HoldConfirmToggle extends HTMLElement {
   _beginConfirm() {
     this._clearConfirm();
     this._confirmPending = true;
+    const ms = resolveConfirmMs(this.config);
+    this._confirmExpiresAt = Date.now() + ms;
     this._confirmTimer = setTimeout(() => {
-      this._confirmPending = false;
-      this._render();
-    }, resolveConfirmMs(this.config));
+      this._confirmTimer = null;
+      this._clearConfirm();
+    }, ms);
+    this._confirmTicker = setInterval(() => this._render(), 200);
     this._render();
   }
 
   _clearConfirm() {
     clearTimeout(this._confirmTimer);
     this._confirmTimer = null;
+    clearInterval(this._confirmTicker);
+    this._confirmTicker = null;
+    this._confirmExpiresAt = 0;
+    this._resetBar();
     if (this._confirmPending) {
       this._confirmPending = false;
       this._render();
@@ -354,6 +367,10 @@ class HoldConfirmToggle extends HTMLElement {
   }
 
   _onClick(e) {
+    if (this._suppressClick) {
+      this._suppressClick = false;
+      return;
+    }
     if (this._confirmPending) {
       const button = e.composedPath().find(
         (el) => el.classList && el.classList.contains('button')
@@ -372,7 +389,11 @@ class HoldConfirmToggle extends HTMLElement {
 
   _hint() {
     if (this._confirmPending) {
-      return i18n('confirm_prompt', { seconds: this.config.confirm_seconds });
+      const remaining = Math.max(
+        0,
+        Math.ceil((this._confirmExpiresAt - Date.now()) / 1000)
+      );
+      return i18n('confirm_prompt', { seconds: remaining });
     }
     const holdMs = this._holdMs;
     if (holdMs) {
@@ -383,6 +404,13 @@ class HoldConfirmToggle extends HTMLElement {
       );
     }
     return i18n('tap_hint');
+  }
+
+  _confirmBarRatio() {
+    if (!this._confirmPending || !this._confirmExpiresAt) return 0;
+    const total = resolveConfirmMs(this.config);
+    const remaining = Math.max(0, this._confirmExpiresAt - Date.now());
+    return total ? remaining / total : 0;
   }
 
   _render() {
@@ -414,6 +442,13 @@ class HoldConfirmToggle extends HTMLElement {
     hint.textContent = this._hint();
     hint.classList.toggle('warning', this._confirmPending);
     card.classList.toggle('pending', this._confirmPending);
+    const bar = this.shadowRoot.querySelector('.bar');
+    if (this._confirmPending) {
+      bar.style.transition = 'none';
+      bar.style.width = `${Math.round(this._confirmBarRatio() * 100)}%`;
+    } else if (!this._holdActive) {
+      this._resetBar();
+    }
   }
 }
 
