@@ -92,8 +92,12 @@ card._onPointerUp();
 if (calls.length !== 0) throw new Error('no service call before accept');
 if (els['.value'].textContent !== '22.5') throw new Error('pending value should display 22.5');
 
-// accept
-card._onAccept({ stopPropagation: () => {} });
+// accept must not be treated as a dial drag: simulated pointerdown on the
+// accept button (near dial center) must not change the pending value
+card._onDialPointerDown = card._onDialPointerDown.bind(card);
+const before = card._pendingValue;
+if (before !== 22.5) throw new Error('precondition failed: ' + before);
+card._onAccept({ stopPropagation: () => {}, preventDefault: () => {} });
 if (calls.length !== 1) throw new Error('accept should call set_temperature');
 if (calls[0].service !== 'set_temperature') throw new Error('wrong service: ' + calls[0].service);
 if (calls[0].data.temperature !== 22.5) throw new Error('wrong temperature: ' + calls[0].data.temperature);
@@ -110,6 +114,30 @@ card._onPointerUp();
 await sleep(5500);
 if (card._pendingValue !== null) throw new Error('pending should expire');
 if (states['climate.heat'].attributes.temperature !== 22.5) throw new Error('state must not change on expiry');
+
+// arc endpoints: render must draw the fill from START_ANGLE to the knob angle
+{
+  const arcEl = els['.arc-value'];
+  const setCalls = [];
+  arcEl.setAttribute = (name, val) => { setCalls.push(val); return fakeElSet(name, val); };
+  function fakeElSet() {}
+  card._render();
+  const d = setCalls[setCalls.length - 1];
+  if (!d) throw new Error('arc d not set, calls: ' + JSON.stringify(setCalls));
+  // d = "M x1 y1 A r r 0 large 1 x2 y2" — endpoint is the last two numbers
+  const numRe = new RegExp("-?[0-9]+[.]?[0-9]*", "g");
+  const nums = d.match(numRe).map(Number);
+  const startX = nums[0], startY = nums[1];
+  const endX = nums[nums.length - 2], endY = nums[nums.length - 1];
+  const expectStart = [100 + 78 * Math.cos((-150 - 90) * Math.PI / 180), 100 + 78 * Math.sin((-150 - 90) * Math.PI / 180)];
+  const expectEnd = [100 + 78 * Math.cos(-90 * Math.PI / 180), 100 + 78 * Math.sin(-90 * Math.PI / 180)];
+  if (Math.abs(startX - expectStart[0]) > 1 || Math.abs(startY - expectStart[1]) > 1) {
+    throw new Error('arc start mismatch: ' + startX + ',' + startY);
+  }
+  if (Math.abs(endX - expectEnd[0]) > 1 || Math.abs(endY - expectEnd[1]) > 1) {
+    throw new Error('arc end mismatch (fill must end at knob): ' + endX + ',' + endY);
+  }
+}
 
 console.log('scenario ok');
 `;

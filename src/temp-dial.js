@@ -239,7 +239,10 @@ export class TempDial extends HTMLElement {
 
   connectedCallback() {
     const wrap = this.shadowRoot.querySelector('.dial-wrap');
-    wrap.addEventListener('pointerdown', (e) => this._onDialPointerDown(e));
+    wrap.addEventListener('pointerdown', (e) => {
+      if (e.target.closest && e.target.closest('.accept-btn')) return;
+      this._onDialPointerDown(e);
+    });
     const knob = this.shadowRoot.querySelector('.knob');
     knob.addEventListener('pointerdown', (e) => this._onDialPointerDown(e));
     const accept = this.shadowRoot.querySelector('.accept-btn');
@@ -271,6 +274,16 @@ export class TempDial extends HTMLElement {
     this._clearConfirm();
     this._dragging = true;
     this._updateFromPointer(e);
+  }
+
+  _onAccept(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    if (this._pendingValue === null) return;
+    const value = this._pendingValue;
+    this._pendingValue = null;
+    this._clearConfirm();
+    this._callService(value);
   }
 
   _onPointerMove(e) {
@@ -327,14 +340,6 @@ export class TempDial extends HTMLElement {
     return this._pendingValue !== null;
   }
 
-  _onAccept(e) {
-    e.stopPropagation();
-    if (this._pendingValue === null) return;
-    const value = this._pendingValue;
-    this._pendingValue = null;
-    this._clearConfirm();
-    this._callService(value);
-  }
 
   _hint() {
     if (this._pendingValue !== null && this._pendingValue !== this._currentValue) {
@@ -379,7 +384,7 @@ export class TempDial extends HTMLElement {
       arcPath(cx, cy, r, START_ANGLE, START_ANGLE + SWEEP)
     );
     const valueArc = this.shadowRoot.querySelector('.arc-value');
-    valueArc.setAttribute('d', arcPath(cx, cy, r, START_ANGLE, START_ANGLE + angle));
+    valueArc.setAttribute('d', arcPath(cx, cy, r, START_ANGLE, angle));
     this.shadowRoot.querySelector('.arc-pending').setAttribute('d', '');
     const [kx, ky] = polar(cx, cy, r, angle);
     const knob = this.shadowRoot.querySelector('.knob');
