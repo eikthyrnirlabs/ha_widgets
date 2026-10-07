@@ -7,6 +7,12 @@ import {
   valueToAngle,
   pointerToAngle,
   dialI18n,
+  hexToRgb,
+  rgbToHex,
+  mixHex,
+  hasColorScale,
+  resolveDialColor,
+  DIAL_COLORS,
 } from '../src/dial-helpers.js';
 import assert from 'node:assert';
 
@@ -94,6 +100,57 @@ check('dialI18n interpolates params', () => {
 
 check('DEFAULT_DIAL_CONFIG is frozen', () => {
   assert.throws(() => { 'use strict'; DEFAULT_DIAL_CONFIG.step = 9; });
+});
+
+check('validateDialConfig enforces threshold rules', () => {
+  const base = { entity: 'climate.x', min: 15, max: 30, step: 0.5, confirm_seconds: 5 };
+  assert.equal(validateDialConfig({ ...base, low: 18, mid: 21, high: 24 }), null);
+  assert.ok(validateDialConfig({ ...base, low: 24, mid: 21, high: 18 }));
+  assert.ok(validateDialConfig({ ...base, low: 18, mid: 21 }));
+  assert.ok(validateDialConfig({ ...base, mid: 21 }));
+});
+
+check('hexToRgb and rgbToHex round-trip', () => {
+  assert.deepEqual(hexToRgb('#2196f3'), [33, 150, 243]);
+  assert.equal(hexToRgb('nope'), null);
+  assert.equal(rgbToHex(33, 150, 243), '#2196f3');
+});
+
+check('mixHex interpolates between colors', () => {
+  assert.equal(mixHex('#000000', '#ffffff', 0), '#000000');
+  assert.equal(mixHex('#000000', '#ffffff', 1), '#ffffff');
+  assert.equal(mixHex('#000000', '#ffffff', 0.5), '#808080');
+});
+
+check('hasColorScale requires all three ordered thresholds', () => {
+  assert.ok(hasColorScale({ low: 18, mid: 21, high: 24 }));
+  assert.ok(!hasColorScale({ low: 18, mid: 21 }));
+  assert.ok(!hasColorScale({}));
+  assert.ok(!hasColorScale({ low: 24, mid: 21, high: 18 }));
+});
+
+check('resolveDialColor scales blue-green-red across thresholds', () => {
+  const cfg = { low: 15, mid: 22.5, high: 30 };
+  assert.equal(resolveDialColor(10, cfg), DIAL_COLORS.cold);
+  assert.equal(resolveDialColor(15, cfg), DIAL_COLORS.cold);
+  assert.equal(resolveDialColor(22.5, cfg), DIAL_COLORS.mild);
+  assert.equal(resolveDialColor(30, cfg), DIAL_COLORS.hot);
+  assert.equal(resolveDialColor(40, cfg), DIAL_COLORS.hot);
+  const belowMid = resolveDialColor(18.75, cfg);
+  assert.ok(belowMid !== DIAL_COLORS.cold && belowMid !== DIAL_COLORS.mild);
+});
+
+check('resolveDialColor falls back to single color or none', () => {
+  assert.equal(resolveDialColor(20, { color: '#ff9800' }), '#ff9800');
+  assert.equal(resolveDialColor(20, {}), null);
+  const gradientAt20 = resolveDialColor(20, { low: 15, mid: 22.5, high: 30, color: '#ff9800' });
+  assert.ok(gradientAt20 !== '#ff9800', 'gradient must win over color when thresholds set');
+  assert.equal(gradientAt20, mixHex(DIAL_COLORS.cold, DIAL_COLORS.mild, (20 - 15) / (22.5 - 15)));
+});
+
+check('thresholds take precedence over explicit color', () => {
+  const cfg = { low: 15, mid: 22.5, high: 30, color: '#ff9800' };
+  assert.equal(resolveDialColor(29, cfg), mixHex(DIAL_COLORS.mild, DIAL_COLORS.hot, (29 - 22.5) / (30 - 22.5)));
 });
 
 console.log(`\n${passed} dial helper checks passed`);

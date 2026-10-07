@@ -3,6 +3,7 @@ import {
   dialI18n,
   normalizeDialConfig,
   pointerToAngle,
+  resolveDialColor,
   roundToStep,
   validateDialConfig,
   valueToAngle,
@@ -386,10 +387,21 @@ export class TempDial extends HTMLElement {
     const valueArc = this.shadowRoot.querySelector('.arc-value');
     valueArc.setAttribute('d', arcPath(cx, cy, r, START_ANGLE, angle));
     this.shadowRoot.querySelector('.arc-pending').setAttribute('d', '');
+    const dialColor = resolveDialColor(value, this.config);
+    if (dialColor) {
+      valueArc.style.stroke = dialColor;
+    } else {
+      valueArc.style.stroke = '';
+    }
     const [kx, ky] = polar(cx, cy, r, angle);
     const knob = this.shadowRoot.querySelector('.knob');
     knob.style.left = `${kx / 2}%`;
     knob.style.top = `${ky / 2}%`;
+    if (dialColor) {
+      knob.style.background = dialColor;
+    } else {
+      knob.style.background = '';
+    }
     const accept = this.shadowRoot.querySelector('.accept-btn');
     const showAccept = pending;
     accept.classList.toggle('visible', showAccept);
