@@ -12,6 +12,7 @@ export const DEFAULT_DIAL_CONFIG = Object.freeze({
   low: undefined,
   mid: undefined,
   high: undefined,
+  humidity_entity: '',
 });
 
 export const DIAL_COLORS = Object.freeze({
@@ -39,6 +40,9 @@ export function validateDialConfig(config) {
   const confirm = Number(config.confirm_seconds);
   if (Number.isNaN(confirm) || confirm <= 0) {
     return 'confirm_seconds must be a positive number';
+  }
+  if (config.humidity_entity !== undefined && typeof config.humidity_entity !== 'string') {
+    return 'humidity_entity must be an entity id';
   }
   const thresholds = ['low', 'mid', 'high'].filter(
     (k) => config[k] !== undefined && config[k] !== null
@@ -166,4 +170,31 @@ export function resolveDialColor(value, config) {
     return mixHex(DIAL_COLORS.mild, DIAL_COLORS.hot, (value - mid) / (high - mid));
   }
   return config.color || null;
+}
+
+export function readTemperature(entity) {
+  if (!entity) return null;
+  const attrs = entity.attributes || {};
+  const raw =
+    attrs.temperature ?? attrs.current_temperature ?? entity.state;
+  if (raw === undefined || raw === null || raw === 'unknown' || raw === 'unavailable') {
+    return null;
+  }
+  const num = Number(raw);
+  return Number.isNaN(num) ? null : num;
+}
+
+export function readHumidity(entity) {
+  if (!entity) return null;
+  const attrs = entity.attributes || {};
+  let raw = attrs.humidity ?? entity.state;
+  if (raw === undefined || raw === null || raw === 'unknown' || raw === 'unavailable') {
+    return null;
+  }
+  let unit = attrs.unit_of_measurement || '%';
+  if (unit !== '%') {
+    unit = '%';
+  }
+  const num = Number(raw);
+  return Number.isNaN(num) ? null : { value: num, unit };
 }

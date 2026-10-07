@@ -1,5 +1,7 @@
 import {
   DEFAULT_DIAL_CONFIG,
+  readTemperature,
+  readHumidity,
   validateDialConfig,
   normalizeDialConfig,
   roundToStep,
@@ -151,6 +153,30 @@ check('resolveDialColor falls back to single color or none', () => {
 check('thresholds take precedence over explicit color', () => {
   const cfg = { low: 15, mid: 22.5, high: 30, color: '#ff9800' };
   assert.equal(resolveDialColor(29, cfg), mixHex(DIAL_COLORS.mild, DIAL_COLORS.hot, (29 - 22.5) / (30 - 22.5)));
+});
+
+check('readTemperature reads attributes first, then state', () => {
+  assert.equal(readTemperature({ state: '21', attributes: { temperature: 20 } }), 20);
+  assert.equal(readTemperature({ state: '21', attributes: {} }), 21);
+  assert.equal(readTemperature({ state: '21.5', attributes: { current_temperature: 19 } }), 19);
+  assert.equal(readTemperature(null), null);
+  assert.equal(readTemperature({ state: 'unknown', attributes: {} }), null);
+  assert.equal(readTemperature({ state: 'unavailable', attributes: {} }), null);
+  assert.equal(readTemperature({ state: 'heat', attributes: {} }), null);
+});
+
+check('readHumidity reads humidity attribute or state with % unit', () => {
+  assert.deepEqual(readHumidity({ state: '45', attributes: { humidity: 55 } }), { value: 55, unit: '%' });
+  assert.deepEqual(readHumidity({ state: '45', attributes: {} }), { value: 45, unit: '%' });
+  assert.deepEqual(readHumidity({ state: '45', attributes: { unit_of_measurement: '%' } }), { value: 45, unit: '%' });
+  assert.equal(readHumidity(null), null);
+  assert.equal(readHumidity({ state: 'unknown', attributes: {} }), null);
+});
+
+check('validateDialConfig accepts humidity_entity', () => {
+  const base = { entity: 'climate.x', min: 15, max: 30, step: 0.5, confirm_seconds: 5 };
+  assert.equal(validateDialConfig({ ...base, humidity_entity: 'sensor.room_humidity' }), null);
+  assert.ok(validateDialConfig({ ...base, humidity_entity: 42 }));
 });
 
 console.log(`\n${passed} dial helper checks passed`);

@@ -144,13 +144,17 @@
         state: 'off',
         attributes: { friendly_name: 'Sauna', temperature: 60, unit_of_measurement: '°C' },
       },
+      'sensor.living_room_humidity': {
+        state: '48',
+        attributes: { unit_of_measurement: '%' },
+      },
     };
 
     const log = createLog('log');
     const hass = createHass(states, { onCall: (d, s, data) => log(d, s, data.entity_id) });
 
     const configs = [
-      { entity: 'climate.heating', min: 15, max: 30, step: 0.5, confirm_seconds: 5, low: 15, mid: 22.5, high: 30 },
+      { entity: 'climate.heating', min: 15, max: 30, step: 0.5, confirm_seconds: 5, low: 15, mid: 22.5, high: 30, humidity_entity: 'sensor.living_room_humidity' },
       { entity: 'climate.water', min: 40, max: 65, step: 1, confirm_seconds: 3 },
       { entity: 'climate.sauna', min: 40, max: 90, step: 1, confirm_seconds: 4, low: 40, mid: 65, high: 90 },
     ];
