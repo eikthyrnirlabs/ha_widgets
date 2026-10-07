@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -7,6 +8,23 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const srcDir = join(root, 'src');
 const outDir = join(root, 'dist');
 mkdirSync(outDir, { recursive: true });
+
+let version = '0.0.0';
+try {
+  version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version || version;
+} catch {
+  // keep default
+}
+let commit = '';
+try {
+  commit = execSync('git rev-parse --short HEAD', { cwd: root, stdio: ['pipe', 'pipe', 'pipe'] })
+    .toString()
+    .trim();
+} catch {
+  commit = '';
+}
+const buildStamp = commit ? `${version}+${commit}` : version;
+const cacheTag = commit ? `${version}-${commit}` : version;
 
 const files = readdirSync(srcDir).filter((f) => f.endsWith('.js'));
 
@@ -48,7 +66,7 @@ const stripModuleSyntax = (code) =>
     .replace(/^export\s+/gm, '')
     .replace(/\n{3,}/g, '\n\n');
 
-let bundle = `/*! ha_widgets bundle — generated, do not edit */\n(function () {\n'use strict';\n`;
+let bundle = `/*! ha_widgets bundle — generated, do not edit */\n/*! version: ${buildStamp} */\n(function () {\n'use strict';\nconsole.log('[ha_widgets] version ${buildStamp}');\n`;
 for (const file of ordered) {
   const mod = modules.get(file);
   bundle += `\n/* --- ${file} --- */\n${stripModuleSyntax(mod.code)}\n`;
@@ -59,3 +77,21 @@ const out = join(outDir, 'ha_widgets.js');
 writeFileSync(out, bundle);
 console.log(`Wrote ${out} (${bundle.length} bytes)`);
 console.log(`Module order: ${ordered.join(' -> ')}`);
+console.log(`Version: ${buildStamp}`);
+
+// Update demo pages to reference the bundle with a cache-busting query
+const demoPages = [
+  join(root, 'demo', 'buttons', 'index.html'),
+  join(root, 'demo', 'dial', 'index.html'),
+];
+for (const page of demoPages) {
+  let html = readFileSync(page, 'utf8');
+  const re = /(\.\.\/\.\.\/dist\/ha_widgets\.js)(\?v=[\w.\-]+)?/;
+  if (!re.test(html)) {
+    console.warn(`No bundle script tag found in ${page}`);
+    continue;
+  }
+  html = html.replace(re, `$1?v=${cacheTag}`);
+  writeFileSync(page, html);
+  console.log(`Stamped ${page} with ?v=${cacheTag}`);
+}
