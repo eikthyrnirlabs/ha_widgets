@@ -94,7 +94,8 @@
     <h1>Hold/Confirm Toggle</h1>
     <div class="sub">
       Demo of <a href="https://github.com/eikthyrnirlabs/ha_widgets">ha_widgets</a> —
-      entities are simulated in your browser, nothing is controlled.
+      hold/confirm toggle and temperature dial.
+      Entities are simulated in your browser, nothing is controlled.
     </div>
 
     <div class="grid" id="cards"></div>
@@ -114,6 +115,10 @@
       'switch.garage_door': { state: 'off', attributes: { friendly_name: 'Garage Door' } },
       'light.kitchen': { state: 'on', attributes: { friendly_name: 'Kitchen Light' } },
       'input_boolean.guest_mode': { state: 'off', attributes: { friendly_name: 'Guest Mode' } },
+      'climate.heating': {
+        state: 'heat',
+        attributes: { friendly_name: 'Heating', temperature: 20, unit_of_measurement: '°C' },
+      },
     };
 
     const logEl = document.getElementById('log');
@@ -138,6 +143,8 @@
           entity.state = 'on';
         } else if (service === 'turn_off') {
           entity.state = 'off';
+        } else if (service === 'set_temperature') {
+          entity.attributes.temperature = data.temperature;
         }
         for (const card of document.querySelectorAll('hold-confirm-toggle')) {
           card.hass = hass;
@@ -151,34 +158,38 @@
       { entity: 'input_boolean.guest_mode', mode: 'confirm', confirm_seconds: 4 },
     ];
 
-    function configToYaml(config) {
-      const lines = [
-        ['type', 'custom:hold-confirm-toggle'],
-        ['entity', config.entity],
-        ['mode', config.mode],
-        ['hold_seconds', config.hold_seconds],
-        ['confirm_seconds', config.confirm_seconds],
-      ];
+    const dialConfigs = [
+      { entity: 'climate.heating', min: 15, max: 30, step: 0.5, confirm_seconds: 5 },
+    ];
+
+    function configToYaml(config, type) {
+      const keys = ['entity', 'name', 'mode', 'hold_seconds', 'confirm_seconds', 'min', 'max', 'step', 'unit'];
+      const lines = [['type', 'custom:' + type]];
+      for (const k of keys) {
+        if (config[k] !== undefined) lines.push([k, config[k]]);
+      }
       return lines
-        .filter(([k, v]) => v !== undefined)
         .map(([k, v]) => `<span class="k">${k}:</span> ${v}`)
         .join('\n');
     }
 
-    const grid = document.getElementById('cards');
-    for (const config of configs) {
+    function renderCard(tagName, config) {
       const cell = document.createElement('div');
       cell.className = 'cell';
-      const card = document.createElement('hold-confirm-toggle');
+      const card = document.createElement(tagName);
       card.setConfig(config);
       card.hass = hass;
       const pre = document.createElement('div');
       pre.className = 'config';
-      pre.innerHTML = configToYaml(config);
+      pre.innerHTML = configToYaml(config, tagName);
       cell.appendChild(card);
       cell.appendChild(pre);
       grid.appendChild(cell);
     }
+
+    const grid = document.getElementById('cards');
+    for (const config of configs) renderCard('hold-confirm-toggle', config);
+    for (const config of dialConfigs) renderCard('temp-dial', config);
   </script>
 </body>
 </html>

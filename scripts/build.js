@@ -19,7 +19,7 @@ const files = readdirSync(srcDir).filter((f) => f.endsWith('.js'));
 let bundle = `/*! ha_widgets bundle — generated, do not edit */\n(function () {\n'use strict';\n`;
 for (const file of files.sort()) {
   const code = readFileSync(join(srcDir, file), 'utf8');
-  bundle += `\n/* --- ${file} --- */\n${stripModuleSyntax(code)}\n`;
+  bundle += `\n/* --- ${file} --- */\n(() => {\n${stripModuleSyntax(code)}\n})();\n`;
 }
 bundle += `\n})();\n`;
 

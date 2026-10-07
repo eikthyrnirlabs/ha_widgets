@@ -51,6 +51,37 @@ Assistant needed:
 
 **[Open the demo](https://eikthyrnirlabs.github.io/ha_widgets/)**
 
+### Temperature Dial (`temp-dial`)
+
+A circular dial for climate entities. Drag the knob (or anywhere on the dial)
+to pick a temperature, then press **Accept** in the center within the
+confirmation window. Nothing is sent to Home Assistant until you accept, and
+an unconfirmed change reverts when the window expires.
+
+#### Options
+
+| Name              | Type    | Default      | Description                                          |
+| ----------------- | ------- | ------------ | ---------------------------------------------------- |
+| `type`            | string  | **required** | `custom:temp-dial`                                   |
+| `entity`          | string  | **required** | Climate entity (e.g. `climate.heating`)              |
+| `name`            | string  | friendly name | Card title                                          |
+| `min`             | number  | `15`         | Dial minimum                                        |
+| `max`             | number  | `30`         | Dial maximum                                        |
+| `step`            | number  | `0.5`        | Rounding increment while dragging                   |
+| `unit`            | string  | entity unit  | Unit shown next to the value (e.g. `°C`)            |
+| `confirm_seconds` | number  | `5`          | How long the accept window stays open (1–30)        |
+
+#### Example
+
+```yaml
+type: custom:temp-dial
+entity: climate.heating
+min: 15
+max: 30
+step: 0.5
+confirm_seconds: 5
+```
+
 ## Installation
 
 ### HACS (recommended)
