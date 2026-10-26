@@ -13,6 +13,7 @@ export const DEFAULT_DIAL_CONFIG = Object.freeze({
   mid: undefined,
   high: undefined,
   humidity_entity: '',
+  temp_entity: '',
 });
 
 export const DIAL_COLORS = Object.freeze({
@@ -43,6 +44,9 @@ export function validateDialConfig(config) {
   }
   if (config.humidity_entity !== undefined && typeof config.humidity_entity !== 'string') {
     return 'humidity_entity must be an entity id';
+  }
+  if (config.temp_entity !== undefined && typeof config.temp_entity !== 'string') {
+    return 'temp_entity must be an entity id';
   }
   const thresholds = ['low', 'mid', 'high'].filter(
     (k) => config[k] !== undefined && config[k] !== null
@@ -197,4 +201,12 @@ export function readHumidity(entity) {
   }
   const num = Number(raw);
   return Number.isNaN(num) ? null : { value: num, unit };
+}
+
+export function serviceForTemp(entityId) {
+  const domain = String(entityId).split('.')[0];
+  if (domain === 'input_number' || domain === 'number') {
+    return { domain, service: 'set_value', key: 'value' };
+  }
+  return { domain, service: 'set_temperature', key: 'temperature' };
 }

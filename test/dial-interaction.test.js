@@ -150,6 +150,61 @@ if (states['climate.heat'].attributes.temperature !== 22.5) throw new Error('sta
   if (hEl.hidden) throw new Error('humidity should be visible');
 }
 
+// input_number target: dial manipulates input_number.<room>_target_room_temp
+// and shows the measured room temperature from a sensor
+{
+  const states2 = {
+    'input_number.living_room_target_room_temp': {
+      state: '21',
+      attributes: { friendly_name: 'Living room target', min: 15, max: 30, step: 0.5, unit_of_measurement: '°C' },
+    },
+    'sensor.living_room_temperature': {
+      state: '19.4',
+      attributes: { unit_of_measurement: '°C' },
+    },
+  };
+  const calls2 = [];
+  const hass2 = {
+    states: states2,
+    callService(domain, service, data) {
+      calls2.push({ domain, service, data });
+      if (service === 'set_value') {
+        states2[data.entity_id].state = String(data.value);
+      }
+    },
+  };
+  const dial = new TempDial();
+  dial.setConfig({
+    entity: 'input_number.living_room_target_room_temp',
+    min: 15,
+    max: 30,
+    step: 0.5,
+    confirm_seconds: 5,
+    temp_entity: 'sensor.living_room_temperature',
+  });
+  dial.hass = hass2;
+
+  const q = (sel) => dial.shadowRoot.querySelector(sel);
+  if (q('.value').textContent !== '21') throw new Error('initial target should render 21, got ' + q('.value').textContent);
+  if (q('.room-temp').hidden) throw new Error('room temp should be visible');
+  if (!q('.room-temp').textContent.includes('19.4')) throw new Error('room temp text wrong: ' + q('.room-temp').textContent);
+
+  const wrapEl2 = dial.shadowRoot.querySelector('.dial-wrap');
+  wrapEl2.getBoundingClientRect = () => ({ left: 0, top: 0, width: 180, height: 180 });
+  dial._onDialPointerDown({ button: 0, clientX: 90, clientY: 20 });
+  if (dial._pendingValue !== 22.5) throw new Error('drag should set 22.5, got ' + dial._pendingValue);
+  dial._onPointerUp();
+  dial._onAccept({ stopPropagation: () => {}, preventDefault: () => {} });
+
+  if (calls2.length !== 1) throw new Error('accept should call once');
+  if (calls2[0].domain !== 'input_number' || calls2[0].service !== 'set_value') {
+    throw new Error('expected input_number.set_value, got ' + calls2[0].domain + '.' + calls2[0].service);
+  }
+  if (calls2[0].data.value !== 22.5) throw new Error('expected value 22.5, got ' + calls2[0].data.value);
+  if (states2['input_number.living_room_target_room_temp'].state !== '22.5') throw new Error('target should update');
+  if (q('.room-temp').textContent.includes('22.5')) throw new Error('room temp must stay the measured value');
+}
+
 console.log('scenario ok');
 `;
 

@@ -2,6 +2,7 @@ import {
   DEFAULT_DIAL_CONFIG,
   readTemperature,
   readHumidity,
+  serviceForTemp,
   validateDialConfig,
   normalizeDialConfig,
   roundToStep,
@@ -177,6 +178,24 @@ check('validateDialConfig accepts humidity_entity', () => {
   const base = { entity: 'climate.x', min: 15, max: 30, step: 0.5, confirm_seconds: 5 };
   assert.equal(validateDialConfig({ ...base, humidity_entity: 'sensor.room_humidity' }), null);
   assert.ok(validateDialConfig({ ...base, humidity_entity: 42 }));
+});
+
+check('serviceForTemp picks set_value for input_number/number, set_temperature otherwise', () => {
+  assert.deepEqual(serviceForTemp('input_number.living_room_target_room_temp'), {
+    domain: 'input_number',
+    service: 'set_value',
+    key: 'value',
+  });
+  assert.deepEqual(serviceForTemp('number.kitchen_target'), {
+    domain: 'number',
+    service: 'set_value',
+    key: 'value',
+  });
+  assert.deepEqual(serviceForTemp('climate.heating'), {
+    domain: 'climate',
+    service: 'set_temperature',
+    key: 'temperature',
+  });
 });
 
 console.log(`\n${passed} dial helper checks passed`);

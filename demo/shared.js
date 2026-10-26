@@ -11,6 +11,8 @@ export function createHass(states, { onCall } = {}) {
         entity.state = 'off';
       } else if (service === 'set_temperature') {
         entity.attributes.temperature = data.temperature;
+      } else if (service === 'set_value') {
+        entity.state = String(data.value);
       }
       for (const card of document.querySelectorAll('hold-confirm-toggle, temp-dial')) {
         card.hass = hass;
@@ -52,6 +54,7 @@ export function configToYaml(config, type) {
     'mid',
     'high',
     'humidity_entity',
+    'temp_entity',
   ];
   const lines = [['type', 'custom:' + type]];
   for (const k of keys) {

@@ -1,8 +1,8 @@
 /*! ha_widgets bundle — generated, do not edit */
-/*! version: 0.1.0+7c1e83e */
+/*! version: 0.1.0+c463b3f */
 (function () {
 'use strict';
-console.log('[ha_widgets] version 0.1.0+7c1e83e');
+console.log('[ha_widgets] version 0.1.0+c463b3f');
 
 /* --- helpers.js --- */
 const MODES = ['hold', 'confirm', 'both'];
@@ -116,6 +116,7 @@ const DEFAULT_DIAL_CONFIG = Object.freeze({
   mid: undefined,
   high: undefined,
   humidity_entity: '',
+  temp_entity: '',
 });
 
 const DIAL_COLORS = Object.freeze({
@@ -146,6 +147,9 @@ function validateDialConfig(config) {
   }
   if (config.humidity_entity !== undefined && typeof config.humidity_entity !== 'string') {
     return 'humidity_entity must be an entity id';
+  }
+  if (config.temp_entity !== undefined && typeof config.temp_entity !== 'string') {
+    return 'temp_entity must be an entity id';
   }
   const thresholds = ['low', 'mid', 'high'].filter(
     (k) => config[k] !== undefined && config[k] !== null
@@ -300,6 +304,14 @@ function readHumidity(entity) {
   }
   const num = Number(raw);
   return Number.isNaN(num) ? null : { value: num, unit };
+}
+
+function serviceForTemp(entityId) {
+  const domain = String(entityId).split('.')[0];
+  if (domain === 'input_number' || domain === 'number') {
+    return { domain, service: 'set_value', key: 'value' };
+  }
+  return { domain, service: 'set_temperature', key: 'temperature' };
 }
 
 
@@ -754,6 +766,10 @@ dialTemplate.innerHTML = `
       color: var(--primary-text-color, #212121);
       font-variant-numeric: tabular-nums;
     }
+    .room-temp {
+      font-size: 12px;
+      color: var(--secondary-text-color, #727272);
+    }
     .humidity {
       font-size: 12px;
       color: var(--secondary-text-color, #727272);
@@ -801,7 +817,7 @@ dialTemplate.innerHTML = `
       <div class="center">
         <div class="value"></div>
         <div class="unit"></div>
-        <div class="humidity" hidden></div>
+        <div class="room-temp" hidden></div><div class="humidity" hidden></div>
         <button class="accept-btn" type="button"></button>
       </div>
     </div>
@@ -891,6 +907,11 @@ class TempDial extends HTMLElement {
     return readHumidity(this.hass.states[this.config.humidity_entity]);
   }
 
+  get _roomTemp() {
+    if (!this.config.temp_entity || !this.hass) return null;
+    return readTemperature(this.hass.states[this.config.temp_entity]);
+  }
+
   get _unit() {
     const entity = this._entity;
     const fromEntity = entity && entity.attributes && entity.attributes.unit_of_measurement;
@@ -926,11 +947,10 @@ class TempDial extends HTMLElement {
 
   _callService(value) {
     if (!this.hass || !this.hass.callService) return;
-    const domain = this.config.entity.split('.')[0];
-    this.hass.callService(domain, 'set_temperature', {
-      entity_id: this.config.entity,
-      temperature: value,
-    });
+    const { domain, service, key } = serviceForTemp(this.config.entity);
+    const data = { entity_id: this.config.entity };
+    data[key] = value;
+    this.hass.callService(domain, service, data);
   }
 
   _onDialPointerDown(e) {
@@ -1039,6 +1059,15 @@ class TempDial extends HTMLElement {
     this.shadowRoot.querySelector('.value').textContent =
       value === null ? '--' : String(Math.round(value * 10) / 10);
     this.shadowRoot.querySelector('.unit').textContent = this._unit;
+    const roomTempEl = this.shadowRoot.querySelector('.room-temp');
+    const roomTemp = this._roomTemp;
+    if (roomTemp !== null && this.config.temp_entity) {
+      roomTempEl.textContent = `${Math.round(roomTemp * 10) / 10}${this._unit} room`;
+      roomTempEl.hidden = false;
+    } else {
+      roomTempEl.textContent = '';
+      roomTempEl.hidden = true;
+    }
     const humidityEl = this.shadowRoot.querySelector('.humidity');
     const humidity = this._humidity;
     if (humidity && this.config.humidity_entity) {
