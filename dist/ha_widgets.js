@@ -1,8 +1,8 @@
 /*! ha_widgets bundle — generated, do not edit */
-/*! version: 0.1.0+c463b3f */
+/*! version: 0.1.0+2a80b37 */
 (function () {
 'use strict';
-console.log('[ha_widgets] version 0.1.0+c463b3f');
+console.log('[ha_widgets] version 0.1.0+2a80b37');
 
 /* --- helpers.js --- */
 const MODES = ['hold', 'confirm', 'both'];
@@ -334,7 +334,6 @@ cardTemplate.innerHTML = `
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       border: 2px solid transparent;
@@ -699,7 +698,7 @@ dialTemplate.innerHTML = `
       background: var(--ha-card-background, var(--card-background-color, #fff));
       box-shadow: var(--ha-card-box-shadow, 0 2px 4px rgba(0,0,0,.1));
       border: 2px solid transparent;
-      touch-action: none;
+      touch-action: pan-y;
       user-select: none;
       -webkit-user-select: none;
     }
@@ -865,7 +864,8 @@ class TempDial extends HTMLElement {
     this._confirmTicker = null;
     this._confirmExpiresAt = 0;
     this._boundPointerMove = (e) => this._onPointerMove(e);
-    this._boundPointerUp = () => this._onPointerUp();
+    this._boundPointerUp = () => this._onPointerUp(false);
+    this._boundPointerCancelDrag = () => this._onPointerUp(true);
   }
 
   set hass(value) {
@@ -934,14 +934,14 @@ class TempDial extends HTMLElement {
     accept.addEventListener('click', (e) => this._onAccept(e));
     document.addEventListener('pointermove', this._boundPointerMove);
     document.addEventListener('pointerup', this._boundPointerUp);
-    document.addEventListener('pointercancel', this._boundPointerUp);
+    document.addEventListener('pointercancel', this._boundPointerCancelDrag);
     this._render();
   }
 
   disconnectedCallback() {
     document.removeEventListener('pointermove', this._boundPointerMove);
     document.removeEventListener('pointerup', this._boundPointerUp);
-    document.removeEventListener('pointercancel', this._boundPointerUp);
+    document.removeEventListener('pointercancel', this._boundPointerCancelDrag);
     this._clearConfirm();
   }
 
@@ -975,9 +975,15 @@ class TempDial extends HTMLElement {
     this._updateFromPointer(e);
   }
 
-  _onPointerUp() {
+  _onPointerUp(cancelled = false) {
     if (!this._dragging) return;
     this._dragging = false;
+    if (cancelled) {
+      // scroll or system gesture took over: discard the drag, keep state
+      this._pendingValue = null;
+      this._clearConfirm();
+      return;
+    }
     if (this._pendingValue === null || this._pendingValue === this._currentValue) {
       this._render();
       return;
