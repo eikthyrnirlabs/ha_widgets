@@ -27,7 +27,6 @@ cardTemplate.innerHTML = `
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       border: 2px solid transparent;
