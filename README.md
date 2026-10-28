@@ -56,8 +56,11 @@ Assistant needed:
 A circular dial for climate entities. Drag the knob (or anywhere on the dial)
 to pick a temperature, then press **Accept** in the center within the
 confirmation window. The dial initializes from the entity's current
-temperature and follows its live state. With `humidity_entity` set, the
-current room humidity is shown beneath the temperature. Nothing is sent to Home Assistant until you accept, and
+value and follows its live state. Point it at an `input_number.*` or
+`number.*` entity (e.g. `input_number.<room>_target_room_temp`) and it
+writes via `set_value`; climate entities use `set_temperature`. With
+`temp_entity` set, the measured room temperature is displayed; with
+`humidity_entity` set, so is the humidity. Nothing is sent to Home Assistant until you accept, and
 an unconfirmed change reverts when the window expires.
 
 #### Options
@@ -77,6 +80,7 @@ an unconfirmed change reverts when the window expires.
 | `mid`             | number  | –            | Gradient midpoint (green). Set all three or none     |
 | `high`            | number  | –            | Gradient top (red)                                   |
 | `humidity_entity` | string  | –            | Humidity sensor to display in the dial center        |
+| `temp_entity`     | string  | –            | Sensor showing the measured room temperature        |
 
 If `low`, `mid` and `high` are all set, the knob and circle fill blend
 blue → green → red across that range (overriding `color`). With none set,
